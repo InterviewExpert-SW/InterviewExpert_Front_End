@@ -3,10 +3,17 @@ import sounddevice as sd
 from scipy.io.wavfile import write
 from tkinter import messagebox
 import os
+import numpy as np
 
-# 폰트 파일 경로 설정 (프로젝트 폴더 안의 K.ttf 불러오기)
+# 녹음 상태를 저장할 변수
+is_paused = False
+recording = None
+fs = 44100  # 샘플링 레이트
+audio_buffer = []  # 녹음된 오디오 데이터를 저장하는 버퍼
+
+# 폰트 파일 경로 설정 (프로젝트 폴더 안의 DH.ttf 불러오기)
 current_dir = os.path.dirname(os.path.abspath(__file__))
-font_path = os.path.join(current_dir, '..', 'font', 'K.ttf')
+font_path = os.path.join(current_dir, '..', 'font', 'DH.ttf.ttf')
 
 # 경로가 제대로 설정되었는지 확인
 if not os.path.exists(font_path):
@@ -59,13 +66,41 @@ def create_oval_button(canvas, text, command, x, y, width, height, z_index, butt
     return buttons
 
 def record_audio(fs=44100):
-    """마이크에서 오디오를 15초 동안 녹음하고 .wav 파일로 저장"""
+    """마이크에서 오디오를 녹음하고 .wav 파일로 저장"""
+    global recording, is_paused, audio_buffer
+
     duration = 15  # 녹음 시간(초)을 15초로 고정
     try:
-        messagebox.showinfo("녹음 시작", f"녹음이 시작됩니다. {duration}초 동안 말해주세요.")
-        recording = sd.rec(int(duration * fs), samplerate=fs, channels=2)
-        sd.wait()  # 녹음이 완료될 때까지 대기
-        write('recording.wav', fs, recording)  # 'recording.wav'로 파일 저장
-        messagebox.showinfo("녹음 완료", "녹음이 완료되었습니다. 'recording.wav' 파일로 저장되었습니다.")
+        if not is_paused:
+            messagebox.showinfo("녹음 시작", f"녹음이 시작됩니다.")
+            recording = sd.rec(int(duration * fs), samplerate=fs, channels=2, dtype='float64')
+            sd.wait()  # 녹음이 완료될 때까지 대기
+            audio_buffer.append(recording)  # 녹음된 데이터를 버퍼에 추가
+            messagebox.showinfo("녹음 완료", "녹음이 완료되었습니다. 'recording.wav' 파일로 저장되었습니다.")
+            save_audio()  # 녹음이 완료되면 파일로 저장
+        else:
+            messagebox.showinfo("녹음 중단", "녹음이 중단되었습니다.")
+            sd.stop()
     except Exception as e:
         messagebox.showerror("녹음 실패", f"녹음 중 문제가 발생했습니다: {str(e)}")
+
+def toggle_pause():
+    """녹음 중단 및 재개 기능"""
+    global is_paused
+    if is_paused:
+        messagebox.showinfo("녹음 재개", "녹음이 재개되었습니다.")
+        record_audio()  # 재개할 때 녹음을 다시 시작
+        is_paused = False
+    else:
+        messagebox.showinfo("녹음 중단", "녹음이 중단되었습니다.")
+        is_paused = True
+        sd.stop()  # 녹음 중단
+
+def save_audio():
+    """녹음된 오디오를 하나의 파일로 저장"""
+    global audio_buffer
+    if audio_buffer:
+        combined_audio = np.concatenate(audio_buffer, axis=0)
+        write('recording.wav', fs, combined_audio)  # 녹음된 오디오를 저장
+        audio_buffer = []  # 버퍼를 비움
+
