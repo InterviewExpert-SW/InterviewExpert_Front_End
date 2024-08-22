@@ -15,12 +15,11 @@ root.configure(bg="white")
 main_frame = tk.Frame(root, bg="white")
 main_frame.pack(fill="both", expand=True)
 
-# 타이틀 라벨 (root 인수를 전달하여 호출)
+# 타이틀 라벨 생성 및 상단에 배치 (pack 사용)
 title_label = create_title_label(main_frame, root)
-title_label.pack(pady=0)
 
 # 캔버스를 사용하여 타원형 버튼 생성
-canvas = tk.Canvas(main_frame, width=390, height=540, bg="white", highlightthickness=0)
+canvas = tk.Canvas(main_frame, width=390, height=450, bg="white", highlightthickness=0)
 canvas.pack(fill="both", expand=True)
 
 # 버튼 생성 - main_frame과 root을 버튼에 전달
